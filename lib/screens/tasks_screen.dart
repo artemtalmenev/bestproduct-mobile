@@ -1,0 +1,373 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+
+import '../models/task.dart';
+import '../services/api_client.dart';
+
+class TasksScreen extends StatefulWidget {
+  const TasksScreen({
+    super.key,
+    required this.api,
+    required this.onLogout,
+  });
+
+  final ApiClient api;
+  final VoidCallback onLogout;
+
+  @override
+  State<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends State<TasksScreen> {
+  List<Task> _tasks = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await widget.api.getTasks();
+      if (mounted) {
+        setState(() {
+          _tasks = list;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.statusCode == 401 ? _sessionErrorMessage : e.code;
+        _loading = false;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = e.response?.statusCode == 401
+          ? _sessionErrorMessage
+          : (e.message ?? 'Ошибка загрузки');
+      setState(() {
+        _error = msg;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = 'Ошибка загрузки';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  static const String _sessionErrorMessage =
+      'Сессия не сохранилась. На веб с другого домена cookie не отправляются — нажмите «Выйти» и войдите снова или используйте приложение на Android.';
+
+  Future<void> _deleteTask(Task task) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить задачу?'),
+        content: Text('«${task.title}»'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await widget.api.deleteTask(task.id);
+      if (mounted) _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.code)),
+        );
+      }
+    }
+  }
+
+  void _openCreate() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => TaskEditScreen(
+          api: widget.api,
+          task: null,
+        ),
+      ),
+    );
+    if (created == true && mounted) _load();
+  }
+
+  void _openEdit(Task task) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => TaskEditScreen(
+          api: widget.api,
+          task: task,
+        ),
+      ),
+    );
+    if (updated == true && mounted) _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Задачи')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: _load,
+                        child: const Text('Повторить'),
+                      ),
+                      if (_error == _sessionErrorMessage) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: widget.onLogout,
+                          child: const Text('Выйти и войти снова'),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: _tasks.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              child: const Center(
+                                child: Text('Нет задач. Создайте первую.'),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: _tasks.length,
+                          itemBuilder: (context, index) {
+                            final t = _tasks[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                title: Text(t.title),
+                                subtitle: t.description != null && t.description!.isNotEmpty
+                                    ? Text(
+                                        t.description!,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : null,
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Chip(
+                                      label: Text(
+                                        t.status,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () => _openEdit(t),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: () => _deleteTask(t),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () => _openEdit(t),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCreate,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class TaskEditScreen extends StatefulWidget {
+  const TaskEditScreen({
+    super.key,
+    required this.api,
+    required this.task,
+  });
+
+  final ApiClient api;
+  final Task? task;
+
+  @override
+  State<TaskEditScreen> createState() => _TaskEditScreenState();
+}
+
+class _TaskEditScreenState extends State<TaskEditScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  String _status = 'todo';
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final t = widget.task;
+    _titleController = TextEditingController(text: t?.title ?? '');
+    _descriptionController = TextEditingController(text: t?.description ?? '');
+    _status = t?.status ?? 'todo';
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
+    try {
+      if (widget.task == null) {
+        await widget.api.createTask(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+        );
+      } else {
+        await widget.api.updateTask(
+          widget.task!.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          status: _status,
+        );
+      }
+      if (mounted) Navigator.pop(context, true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.code;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = 'Ошибка сети';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCreate = widget.task == null;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isCreate ? 'Новая задача' : 'Редактировать'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_error != null) ...[
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                const SizedBox(height: 16),
+              ],
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Название',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Введите название' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Описание (необязательно)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (!isCreate) ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: _status,
+                  decoration: const InputDecoration(
+                    labelText: 'Статус',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'todo', child: Text('К выполнению')),
+                    DropdownMenuItem(value: 'in_progress', child: Text('В работе')),
+                    DropdownMenuItem(value: 'done', child: Text('Выполнено')),
+                    DropdownMenuItem(value: 'cancelled', child: Text('Отменено')),
+                  ],
+                  onChanged: (v) => setState(() => _status = v ?? 'todo'),
+                ),
+              ],
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _loading
+                    ? null
+                    : () => _submit(),
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(isCreate ? 'Создать' : 'Сохранить'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
