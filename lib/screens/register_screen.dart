@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/api_client.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
@@ -95,6 +97,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.surfaceBlack,
+      appBar: AppBar(
+        backgroundColor: AppTheme.surfaceBlack,
+        foregroundColor: AppTheme.textPrimary,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.maybePop(context),
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -105,16 +116,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
+                  const AppLogo(size: 64),
+                  const SizedBox(height: 20),
+                  const Text(
                     'Регистрация',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
                   if (_error != null) ...[
                     Text(
                       _error!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -122,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   if (_successMessage != null) ...[
                     Text(
                       _successMessage!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
                     if (_verifyUrl != null) ...[
@@ -134,9 +151,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: AppTheme.textPrimary),
+                    decoration: InputDecoration(
                       labelText: 'Email',
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: AppTheme.surfaceInput,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.textSecondary),
+                      ),
+                      labelStyle: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Введите email' : null,
@@ -145,9 +174,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: AppTheme.textPrimary),
+                    decoration: InputDecoration(
                       labelText: 'Пароль (мин. 8 символов)',
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: AppTheme.surfaceInput,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.textSecondary),
+                      ),
+                      labelStyle: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Введите пароль';
@@ -164,18 +205,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _submit();
                             }
                           },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.textPrimary,
+                      foregroundColor: AppTheme.surfaceBlack,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                     child: _loading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.surfaceBlack),
                           )
                         : const Text('Зарегистрироваться'),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: widget.onGoToLogin,
-                    child: const Text('Уже есть аккаунт? Вход'),
+                    child: const Text(
+                      'Уже есть аккаунт? Вход',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
                   ),
                 ],
               ),
@@ -213,12 +263,13 @@ class _VerifyLink extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Открыть ссылку'),
-        content: SelectableText(url),
+        backgroundColor: AppTheme.surfaceCard,
+        title: const Text('Открыть ссылку', style: TextStyle(color: AppTheme.textPrimary)),
+        content: SelectableText(url, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Закрыть'),
+            child: const Text('Закрыть', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           FilledButton(
             onPressed: () {
@@ -226,10 +277,14 @@ class _VerifyLink extends StatelessWidget {
               Navigator.pop(ctx);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Ссылка скопирована. Вставьте в браузере.')),
+                  SnackBar(
+                    content: const Text('Ссылка скопирована. Вставьте в браузере.'),
+                    backgroundColor: AppTheme.surfaceCard,
+                  ),
                 );
               }
             },
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.textPrimary, foregroundColor: AppTheme.surfaceBlack),
             child: const Text('Копировать'),
           ),
         ],
@@ -243,15 +298,16 @@ class _VerifyLink extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openOrCopy(context),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           child: Text(
             url,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
               decoration: TextDecoration.underline,
-              decorationColor: Theme.of(context).colorScheme.primary,
+              decorationColor: AppTheme.textSecondary,
+              fontSize: 13,
             ),
             textAlign: TextAlign.center,
           ),

@@ -5,6 +5,8 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
+import 'theme/app_theme.dart';
+import 'widgets/welcome_splash.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,11 +18,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Best Product',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      title: 'TaskPROD',
+      theme: AppTheme.dark,
+      debugShowCheckedModeBanner: false,
       home: const AppShell(),
     );
   }
@@ -46,8 +46,15 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _checkSession() async {
+    const minSplashDuration = Duration(milliseconds: 1600);
+    final stopwatch = Stopwatch()..start();
+
     try {
       final ok = await checkSession(_api);
+      final elapsed = stopwatch.elapsed;
+      if (elapsed < minSplashDuration) {
+        await Future<void>.delayed(minSplashDuration - elapsed);
+      }
       if (mounted) {
         setState(() {
           _checkingSession = false;
@@ -55,6 +62,10 @@ class _AppShellState extends State<AppShell> {
         });
       }
     } catch (_) {
+      final elapsed = stopwatch.elapsed;
+      if (elapsed < minSplashDuration) {
+        await Future<void>.delayed(minSplashDuration - elapsed);
+      }
       if (mounted) {
         setState(() {
           _checkingSession = false;
@@ -75,9 +86,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     if (_checkingSession) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const WelcomeSplash();
     }
     if (_loggedIn) {
       return HomeShell(
@@ -91,15 +100,20 @@ class _AppShellState extends State<AppShell> {
       onGoToRegister: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (ctx) => RegisterScreen(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => RegisterScreen(
               api: _api,
               onSuccess: () {
-                Navigator.pop(ctx);
+                Navigator.pop(context);
                 _onLoginSuccess();
               },
-              onGoToLogin: () => Navigator.pop(ctx),
+              onGoToLogin: () => Navigator.pop(context),
             ),
+            transitionsBuilder: (_, animation, __, child) => FadeTransition(
+              opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+              child: child,
+            ),
+            transitionDuration: const Duration(milliseconds: 200),
           ),
         );
       },

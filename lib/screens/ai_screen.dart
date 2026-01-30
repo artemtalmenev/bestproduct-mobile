@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
+import '../theme/app_theme.dart';
 
 class AiScreen extends StatefulWidget {
   const AiScreen({super.key, required this.api});
@@ -105,53 +106,100 @@ class _AiScreenState extends State<AiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI')),
+      backgroundColor: AppTheme.surfaceBlack,
+      appBar: AppBar(
+        title: const Text('AI', style: TextStyle(color: AppTheme.textPrimary)),
+        backgroundColor: AppTheme.surfaceBlack,
+      ),
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _controller,
               maxLines: 4,
-              decoration: const InputDecoration(
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
                 labelText: 'Опишите задачу или запрос',
                 hintText: 'Например: создать задачу «Подготовить отчёт» на пятницу',
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: AppTheme.surfaceInput,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.borderLight),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.textSecondary),
+                ),
+                labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                hintStyle: const TextStyle(color: AppTheme.textMuted),
               ),
             ),
             const SizedBox(height: 16),
             if (_error != null) ...[
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(
+                _error!,
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+              ),
               const SizedBox(height: 16),
             ],
             FilledButton.icon(
               onPressed: _loading ? null : _send,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.textPrimary,
+                foregroundColor: AppTheme.surfaceBlack,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               icon: _loading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.surfaceBlack),
                     )
-                  : const Icon(Icons.send),
+                  : const Icon(Icons.send_rounded),
               label: Text(_loading ? 'Ожидание ответа...' : 'Отправить'),
             ),
             if (_lastResponse != null) ...[
               const SizedBox(height: 24),
-              Text(
+              const Text(
                 'Ответ AI',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                builder: (context, value, child) => Opacity(
+                  opacity: value,
+                  child: child,
                 ),
-                child: SelectableText(_lastResponse!),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderLight),
+                  ),
+                  child: SelectableText(
+                    _lastResponse!,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 15,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
               ),
             ],
           ],

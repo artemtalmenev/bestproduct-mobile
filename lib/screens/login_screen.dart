@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -91,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.surfaceBlack,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -101,16 +104,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
+                  const AppLogo(size: 72),
+                  const SizedBox(height: 24),
+                  const Text(
                     'Вход',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
                   if (_error != null) ...[
                     Text(
                       _error!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -118,9 +127,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: AppTheme.textPrimary),
+                    decoration: InputDecoration(
                       labelText: 'Email',
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: AppTheme.surfaceInput,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.textSecondary),
+                      ),
+                      labelStyle: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Введите email' : null,
@@ -129,9 +150,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: AppTheme.textPrimary),
+                    decoration: InputDecoration(
                       labelText: 'Пароль',
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: AppTheme.surfaceInput,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.textSecondary),
+                      ),
+                      labelStyle: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Введите пароль' : null,
@@ -145,18 +178,27 @@ class _LoginScreenState extends State<LoginScreen> {
                               _submit();
                             }
                           },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.textPrimary,
+                      foregroundColor: AppTheme.surfaceBlack,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                     child: _loading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.surfaceBlack),
                           )
                         : const Text('Войти'),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: widget.onGoToRegister,
-                    child: const Text('Нет аккаунта? Регистрация'),
+                    child: const Text(
+                      'Нет аккаунта? Регистрация',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
                   ),
                 ],
               ),

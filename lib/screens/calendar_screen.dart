@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/task.dart';
 import '../services/api_client.dart';
+import '../theme/app_theme.dart';
 
 const _weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const _months = [
@@ -114,19 +115,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final tasksByDay = _tasksByDay;
 
     return Scaffold(
+      backgroundColor: AppTheme.surfaceBlack,
       appBar: AppBar(
-        title: const Text('Календарь'),
+        title: const Text('Календарь', style: TextStyle(color: AppTheme.textPrimary)),
+        backgroundColor: AppTheme.surfaceBlack,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.textPrimary))
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      Text(_error!, style: const TextStyle(color: AppTheme.textSecondary)),
                       const SizedBox(height: 16),
-                      FilledButton(onPressed: _load, child: const Text('Повторить')),
+                      FilledButton(
+                        onPressed: _load,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.textPrimary,
+                          foregroundColor: AppTheme.surfaceBlack,
+                        ),
+                        child: const Text('Повторить'),
+                      ),
                     ],
                   ),
                 )
@@ -142,15 +152,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.chevron_left),
+                              icon: const Icon(Icons.chevron_left_rounded, color: AppTheme.textPrimary),
                               onPressed: _loading ? null : _prevMonth,
                             ),
                             Text(
                               '${_months[_month - 1]} $_year',
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.chevron_right),
+                              icon: const Icon(Icons.chevron_right_rounded, color: AppTheme.textPrimary),
                               onPressed: _loading ? null : _nextMonth,
                             ),
                           ],
@@ -162,7 +176,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     child: Center(
                                       child: Text(
                                         w,
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        style: const TextStyle(
+                                          color: AppTheme.textMuted,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -194,9 +210,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     padding: const EdgeInsets.all(2),
                                     child: Material(
                                       color: isToday
-                                          ? Theme.of(context).colorScheme.primaryContainer
+                                          ? AppTheme.surfaceCard
                                           : (dayTasks.isNotEmpty
-                                                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                                                ? AppTheme.surfaceInput
                                                 : Colors.transparent),
                                       borderRadius: BorderRadius.circular(8),
                                       child: InkWell(
@@ -212,13 +228,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                               Text(
                                                 '$day',
                                                 style: TextStyle(
-                                                  fontWeight: isToday ? FontWeight.bold : null,
+                                                  color: AppTheme.textPrimary,
+                                                  fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                                  fontSize: 14,
                                                 ),
                                               ),
                                               if (dayTasks.isNotEmpty)
                                                 Text(
                                                   '${dayTasks.length}',
-                                                  style: Theme.of(context).textTheme.bodySmall,
+                                                  style: const TextStyle(
+                                                    color: AppTheme.textMuted,
+                                                    fontSize: 11,
+                                                  ),
                                                 ),
                                             ],
                                           ),
@@ -241,6 +262,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _showDayTasks(BuildContext context, int day, List<Task> dayTasks) {
     showModalBottomSheet<void>(
       context: context,
+      backgroundColor: AppTheme.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       isScrollControlled: true,
       builder: (ctx) => DraggableScrollableSheet(
         initialChildSize: 0.5,
@@ -254,7 +279,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 '$day ${_months[_month - 1]} — ${dayTasks.length} задач(и)',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Flexible(
@@ -264,11 +293,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 itemBuilder: (_, i) {
                   final t = dayTasks[i];
                   return ListTile(
-                    title: Text(t.title),
+                    title: Text(
+                      t.title,
+                      style: const TextStyle(color: AppTheme.textPrimary),
+                    ),
                     subtitle: t.description != null && t.description!.isNotEmpty
-                        ? Text(t.description!, maxLines: 2, overflow: TextOverflow.ellipsis)
+                        ? Text(
+                            t.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                          )
                         : null,
-                    trailing: Chip(label: Text(t.status, style: const TextStyle(fontSize: 12))),
+                    trailing: Text(
+                      t.status,
+                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                    ),
                   );
                 },
               ),
