@@ -108,6 +108,7 @@ class ApiClient {
     String? title,
     String? description,
     String? dueAt,
+    bool clearDueAt = false,
     String? status,
   }) async {
     await ensureCookieJar();
@@ -115,6 +116,7 @@ class ApiClient {
     if (title != null) data['title'] = title;
     if (description != null) data['description'] = description;
     if (dueAt != null) data['dueAt'] = dueAt;
+    if (clearDueAt) data['dueAt'] = null;
     if (status != null) data['status'] = status;
     final r = await _dio.patch<Map<String, dynamic>>('/api/tasks/$id', data: data);
     if (r.data == null) throw ApiException('INVALID_RESPONSE', r.statusCode);
