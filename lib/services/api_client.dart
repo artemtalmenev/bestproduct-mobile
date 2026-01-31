@@ -8,6 +8,7 @@ import '../config/api_config.dart';
 import '../models/task.dart';
 
 /// HTTP-клиент к бэкенду с поддержкой cookie (сессия после логина).
+/// Cookie jar инициализируется лениво при первом запросе (не в конструкторе).
 class ApiClient {
   ApiClient({String? baseUrl}) {
     _dio = Dio(BaseOptions(
@@ -16,7 +17,6 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
     ));
-    _initCookieJar();
   }
 
   late final Dio _dio;

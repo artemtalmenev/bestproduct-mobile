@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/auth_errors.dart';
 import '../widgets/app_logo.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -62,26 +63,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      final msg = switch (e.code) {
-        'EMAIL_TAKEN' => 'Этот email уже занят',
-        'INVALID_INPUT' => 'Email и пароль (мин. 8 символов)',
-        _ => e.code,
-      };
       setState(() {
-        _error = msg;
+        _error = AuthErrors.registerMessage(e.code);
         _loading = false;
       });
     } on DioException catch (e) {
       if (!mounted) return;
       final code = e.response?.data is Map ? (e.response!.data as Map)['error'] as String? : null;
-      final msg = switch ((e.response?.statusCode, code)) {
-        (409, _) => 'Этот email уже занят',
-        (503, _) => 'Сервис временно недоступен',
-        (500, _) => 'Ошибка сервера. Попробуйте позже.',
-        _ => e.message ?? 'Ошибка сети',
-      };
       setState(() {
-        _error = msg;
+        _error = AuthErrors.registerFromDio(e.response?.statusCode, code);
         _loading = false;
       });
     } catch (e) {

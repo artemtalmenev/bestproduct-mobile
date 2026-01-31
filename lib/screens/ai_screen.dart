@@ -18,7 +18,6 @@ class _AiScreenState extends State<AiScreen> {
   bool _loading = false;
   String? _error;
   String? _lastResponse;
-  String? _lastRequestId;
 
   @override
   void dispose() {
@@ -33,7 +32,6 @@ class _AiScreenState extends State<AiScreen> {
     setState(() {
       _error = null;
       _lastResponse = null;
-      _lastRequestId = null;
       _loading = true;
     });
     try {
@@ -43,7 +41,6 @@ class _AiScreenState extends State<AiScreen> {
       if (!mounted) return;
       if (response != null && response.isNotEmpty) {
         setState(() {
-          _lastRequestId = id;
           _lastResponse = response;
           _loading = false;
         });
@@ -87,7 +84,6 @@ class _AiScreenState extends State<AiScreen> {
         final response = req?['response'] as String?;
         if (response != null && response.isNotEmpty && mounted) {
           setState(() {
-            _lastRequestId = requestId;
             _lastResponse = response;
             _loading = false;
           });

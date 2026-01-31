@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
 import '../theme/app_theme.dart';
+import '../utils/auth_errors.dart';
 import '../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -47,37 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      final msg = switch (e.code) {
-        'USER_NOT_FOUND' => 'Пользователь не найден',
-        'EMAIL_NOT_VERIFIED' => 'Подтвердите email (проверьте почту)',
-        'INVALID_CREDENTIALS' => 'Неверный пароль',
-        'INVALID_INPUT' => 'Проверьте email и пароль',
-        'SERVER_MISCONFIGURATION' => 'Сервер не настроен (нет AUTH_SECRET)',
-        'SERVER_ERROR' => 'Ошибка сервера. Попробуйте позже.',
-        _ => e.code,
-      };
       setState(() {
-        _error = msg;
+        _error = AuthErrors.loginMessage(e.code);
         _loading = false;
       });
     } on DioException catch (e) {
       if (!mounted) return;
       final code = e.response?.data is Map ? (e.response!.data as Map)['error'] as String? : null;
-      final msg = switch ((e.response?.statusCode, code)) {
-        (404, _) => 'Пользователь не найден',
-        (401, _) => 'Неверный пароль',
-        (403, _) => 'Подтвердите email (проверьте почту)',
-        (503, 'SERVER_MISCONFIGURATION') => 'Сервер не настроен (нет AUTH_SECRET)',
-        (503, _) => 'Сервис временно недоступен',
-        (500, _) => 'Ошибка сервера. Попробуйте позже.',
-        _ => e.message ?? e.type.toString(),
-      };
-      final show = msg.startsWith('Пользователь') || msg.startsWith('Неверный') ||
-          msg.startsWith('Подтвердите') || msg.startsWith('Ошибка') || msg.startsWith('Сервер') || msg.startsWith('Сервис')
-          ? msg
-          : 'Сеть: $msg';
+      final msg = AuthErrors.loginFromDio(e.response?.statusCode, code);
       setState(() {
-        _error = show;
+        _error = msg;
         _loading = false;
       });
     } catch (e) {
