@@ -23,6 +23,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   String _status = 'todo';
+  DateTime? _dueAt;
+  bool _clearDueAt = false;
   bool _loading = false;
   String? _error;
 
@@ -33,6 +35,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _titleController = TextEditingController(text: t?.title ?? '');
     _descriptionController = TextEditingController(text: t?.description ?? '');
     _status = t?.status ?? 'todo';
+    _dueAt = t?.dueAt?.toLocal();
   }
 
   @override
@@ -55,6 +58,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
+          dueAt: _dueAt?.toIso8601String(),
         );
       } else {
         await widget.api.updateTask(
@@ -63,6 +67,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
+          dueAt: _dueAt?.toIso8601String(),
+          clearDueAt: _clearDueAt,
           status: _status,
         );
       }
@@ -81,6 +87,44 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         });
       }
     }
+  }
+
+  Future<void> _pickDueAt() async {
+    final now = DateTime.now();
+    final initial = _dueAt ?? now;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _dueAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _clearDueAt = false;
+    });
+  }
+
+  void _clearDueAtSelection() {
+    setState(() {
+      _dueAt = null;
+      _clearDueAt = true;
+    });
+  }
+
+  String _formatDueAt(DateTime dateTime) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    final day = twoDigits(dateTime.day);
+    final month = twoDigits(dateTime.month);
+    final year = dateTime.year;
+    final hour = twoDigits(dateTime.hour);
+    final minute = twoDigits(dateTime.minute);
+    return '$day.$month.$year $hour:$minute';
   }
 
   @override
@@ -125,6 +169,37 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Описание (необязательно)',
                   border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Дата и время',
+                  border: OutlineInputBorder(),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _dueAt != null ? _formatDueAt(_dueAt!) : 'Не задано',
+                        style: TextStyle(
+                          color: _dueAt != null ? AppTheme.textPrimary : AppTheme.textMuted,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _loading ? null : _pickDueAt,
+                      icon: const Icon(Icons.calendar_month_rounded, color: AppTheme.textSecondary),
+                      tooltip: 'Выбрать дату',
+                    ),
+                    if (_dueAt != null)
+                      IconButton(
+                        onPressed: _loading ? null : _clearDueAtSelection,
+                        icon: const Icon(Icons.close_rounded, color: AppTheme.textMuted),
+                        tooltip: 'Очистить',
+                      ),
+                  ],
                 ),
               ),
               if (!isCreate) ...[

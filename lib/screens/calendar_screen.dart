@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../services/api_client.dart';
 import '../theme/app_theme.dart';
+import 'day_schedule_screen.dart';
 
 const _weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const _months = [
@@ -12,9 +13,10 @@ const _months = [
 
 String _taskDateKey(DateTime? dueAt) {
   if (dueAt == null) return '';
-  final y = dueAt.year;
-  final m = dueAt.month.toString().padLeft(2, '0');
-  final d = dueAt.day.toString().padLeft(2, '0');
+  final local = dueAt.toLocal();
+  final y = local.year;
+  final m = local.month.toString().padLeft(2, '0');
+  final d = local.day.toString().padLeft(2, '0');
   return '$y-$m-$d';
 }
 
@@ -216,9 +218,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                                 : Colors.transparent),
                                       borderRadius: BorderRadius.circular(8),
                                       child: InkWell(
-                                        onTap: dayTasks.isEmpty
-                                            ? null
-                                            : () => _showDayTasks(context, day, dayTasks),
+                                        onTap: () => _openDay(context, day),
                                         borderRadius: BorderRadius.circular(8),
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -259,61 +259,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  void _showDayTasks(BuildContext context, int day, List<Task> dayTasks) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppTheme.surfaceDark,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      isScrollControlled: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.25,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (_, scrollController) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                '$day ${_months[_month - 1]} — ${dayTasks.length} задач(и)',
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Flexible(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: dayTasks.length,
-                itemBuilder: (_, i) {
-                  final t = dayTasks[i];
-                  return ListTile(
-                    title: Text(
-                      t.title,
-                      style: const TextStyle(color: AppTheme.textPrimary),
-                    ),
-                    subtitle: t.description != null && t.description!.isNotEmpty
-                        ? Text(
-                            t.description!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                          )
-                        : null,
-                    trailing: Text(
-                      t.status,
-                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+  void _openDay(BuildContext context, int day) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DayScheduleScreen(
+          api: widget.api,
+          initialDate: DateTime(_year, _month, day),
+          initialTasks: _tasks,
         ),
       ),
     );
